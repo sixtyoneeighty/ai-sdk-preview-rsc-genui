@@ -7,7 +7,8 @@ import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { google } from "@ai-sdk/google";
-import { geminiModel } from "./config/aiConfig";
+import { geminiModel, SafetySetting } from "./config/aiConfig";
+import { CoreUserMessage } from "ai";
 
 export default function Home() {
   const { sendMessage } = useActions();
@@ -132,7 +133,7 @@ export default function Home() {
             // Ensure model is a plain object
             const plainModel = {
               ...geminiModel,
-              safetySettings: geminiModel.safetySettings?.map(setting => ({
+              safetySettings: geminiModel.safetySettings?.map((setting: SafetySetting) => ({
                 ...setting
               }))
             };

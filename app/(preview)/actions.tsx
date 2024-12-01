@@ -18,6 +18,7 @@ import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
+import { SafetySetting } from "./config/aiConfig";
 import { searchTool } from "./tools/searchTool";
 
 export interface Hub {
@@ -85,7 +86,7 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   // Ensure model is a plain object before passing to streamUI
   const plainModel = {
     ...model,
-    safetySettings: model.safetySettings?.map(setting => ({
+    safetySettings: model.safetySettings?.map((setting: SafetySetting) => ({
       ...setting
     }))
   };
