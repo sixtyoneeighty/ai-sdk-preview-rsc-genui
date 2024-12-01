@@ -7,6 +7,10 @@ import {
   CoreSystemMessage,
   CoreToolMessage,
   ToolContent,
+  UserContent,
+  TextPart$1,
+  ImagePart,
+  FilePart,
 } from "ai";
 import {
   createAI,
@@ -18,8 +22,7 @@ import { SafetySetting } from "./config/aiConfig";
 import { searchTool } from "./tools/searchTool";
 
 // Define message content types
-type MessageContent = string | { type: string; content: any };
-type ProcessedContent = string | ToolContent;
+type MessageContent = string | { type: string; content: any } | (TextPart$1 | ImagePart | FilePart)[];
 
 // Define base message type
 interface BaseMessage {
@@ -35,23 +38,30 @@ interface SerializableModelConfig {
   };
 }
 
-const processMessageContent = (content: MessageContent): ProcessedContent => {
+function processUserContent(content: MessageContent): UserContent {
   if (typeof content === 'string') {
-    return content;
+    return [{ type: 'text', text: content }] as UserContent;
   }
-  
-  // Handle structured content
-  if (typeof content === 'object' && content !== null) {
-    if (Array.isArray(content)) {
-      return content.map(item => 
-        typeof item === 'string' ? item : JSON.stringify(item)
-      ).join(' ');
-    }
-    return JSON.stringify(content);
+  if (Array.isArray(content)) {
+    return content as UserContent;
   }
-  
-  return String(content);
-};
+  return [{ type: 'text', text: JSON.stringify(content) }] as UserContent;
+}
+
+function processToolContent(content: MessageContent): ToolContent {
+  if (typeof content === 'string') {
+    return { name: 'search', content } as ToolContent;
+  }
+  if (Array.isArray(content)) {
+    return { 
+      name: 'search', 
+      content: content.map(part => 
+        typeof part === 'string' ? part : JSON.stringify(part)
+      ).join(' ')
+    } as ToolContent;
+  }
+  return content as ToolContent;
+}
 
 const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
   "use server";
@@ -61,33 +71,34 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
 
   // Map messages to their proper types with content processing
   const plainMessages: CoreMessage[] = currentMessages.map((msg: BaseMessage): CoreMessage => {
-    const processedContent = processMessageContent(msg.content);
-    
     switch (msg.role) {
       case "user":
         return {
           role: "user",
-          content: processedContent as string
+          content: processUserContent(msg.content)
         } as CoreUserMessage;
       case "assistant":
         return {
           role: "assistant",
-          content: processedContent as string
+          content: typeof msg.content === 'string' 
+            ? msg.content 
+            : Array.isArray(msg.content)
+              ? msg.content.map(part => 
+                  typeof part === 'string' ? part : JSON.stringify(part)
+                ).join(' ')
+              : JSON.stringify(msg.content)
         } as CoreAssistantMessage;
       case "system":
         return {
           role: "system",
-          content: processedContent as string
+          content: typeof msg.content === 'string'
+            ? msg.content
+            : JSON.stringify(msg.content)
         } as CoreSystemMessage;
       case "tool":
-        // Handle tool messages with proper ToolContent structure
-        const toolContent = typeof processedContent === 'string' 
-          ? { name: 'search', content: processedContent }
-          : processedContent;
-        
         return {
           role: "tool",
-          content: toolContent
+          content: processToolContent(msg.content)
         } as CoreToolMessage;
       default:
         // Type guard to ensure all cases are handled
@@ -98,7 +109,7 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
 
   const userMessage: CoreUserMessage = {
     role: "user",
-    content: prompt,
+    content: [{ type: 'text', text: prompt }] as UserContent
   };
 
   // Update messages with new user message
