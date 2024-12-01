@@ -19,6 +19,7 @@ export default function Home() {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
 
+  /* eslint-disable react/no-unescaped-entities */
   const suggestedActions = [
     { 
       title: "Yo, is", 
@@ -41,6 +42,7 @@ export default function Home() {
       action: "Which bands are actually keeping punk rock alive in 2024?" 
     },
   ];
+  /* eslint-enable react/no-unescaped-entities */
 
   return (
     <div className="flex flex-row justify-center pb-20 h-dvh bg-white dark:bg-zinc-900">
@@ -58,6 +60,7 @@ export default function Home() {
                 <p className="text-center font-bold text-base">
                   Your Scene-Savvy, Slightly Judgmental AI Assistant
                 </p>
+                {/* eslint-disable react/no-unescaped-entities */}
                 <p className="text-center">
                   Hey posers and punks alike! I&#39;m PunkBot, and I&#39;ve been in the scene since before you knew what a mosh pit was. 
                   I&#39;ve got the dirt on every band that ever claimed they&#39;d never sell out (spoiler: most of them did). 
@@ -66,6 +69,7 @@ export default function Home() {
                 <p className="text-center">
                   And yeah, I was at that show you&#39;re thinking about. Front row. No big deal.
                 </p>
+                {/* eslint-enable react/no-unescaped-entities */}
                 <div className="flex flex-col gap-2">
                   <p className="text-center font-medium">Try asking me stuff like:</p>
                   {suggestedActions.map((action, index) => (
