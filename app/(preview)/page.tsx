@@ -22,7 +22,7 @@ export default function Home() {
     { 
       title: "Yo, is", 
       label: "blink-182 still together?", 
-      action: "Hey, what's the latest with blink-182? Are they still doing their thing or what?" 
+      action: "Hey, what&apos;s the latest with blink-182? Are they still doing their thing or what?" 
     },
     { 
       title: "Tell me about", 
@@ -30,12 +30,12 @@ export default function Home() {
       action: "When exactly did Green Day sell out? Was it American Idiot or before that?" 
     },
     { 
-      title: "What's the deal with", 
+      title: "What&apos;s the deal with", 
       label: "Warped Tour these days?", 
       action: "Is Warped Tour ever coming back or what?" 
     },
     { 
-      title: "Who's", 
+      title: "Who&apos;s", 
       label: "keeping punk alive in 2024?", 
       action: "Which bands are actually keeping punk rock alive in 2024?" 
     },
