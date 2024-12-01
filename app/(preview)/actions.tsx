@@ -5,6 +5,7 @@ import {
   CoreUserMessage, 
   CoreAssistantMessage,
   CoreSystemMessage,
+  CoreToolMessage,
 } from "ai";
 import {
   createAI,
@@ -53,16 +54,40 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
   const messages = getMutableAIState<typeof AI>("messages");
   const currentMessages = messages.get() as CoreMessage[];
 
-  const plainMessages = currentMessages.map((msg) => ({
-    role: msg.role,
-    content: msg.content,
-  }));
+  // Map messages to their proper types
+  const plainMessages: CoreMessage[] = currentMessages.map((msg): CoreMessage => {
+    switch (msg.role) {
+      case "user":
+        return {
+          role: "user",
+          content: String(msg.content)
+        } as CoreUserMessage;
+      case "assistant":
+        return {
+          role: "assistant",
+          content: String(msg.content)
+        } as CoreAssistantMessage;
+      case "system":
+        return {
+          role: "system",
+          content: String(msg.content)
+        } as CoreSystemMessage;
+      case "tool":
+        return {
+          role: "tool",
+          content: String(msg.content)
+        } as CoreToolMessage;
+      default:
+        throw new Error(`Invalid message role: ${msg.role}`);
+    }
+  });
 
   const userMessage: CoreUserMessage = {
     role: "user",
     content: prompt,
   };
 
+  // Update messages with new user message
   messages.update((prevMessages) => [...prevMessages, userMessage]);
 
   // Create a new Gemini model instance with the config
