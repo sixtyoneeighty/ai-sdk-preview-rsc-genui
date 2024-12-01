@@ -7,6 +7,7 @@ import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { google } from "@ai-sdk/google";
+import { geminiModel } from "./config/aiConfig";
 
 export default function Home() {
   const { sendMessage } = useActions();
@@ -40,40 +41,6 @@ export default function Home() {
       action: "Which bands are actually keeping punk rock alive in 2024?" 
     },
   ];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage = input;
-    setInput("");
-    setMessages((messages) => [
-      ...messages,
-      <Message key={messages.length} role="user">
-        {userMessage}
-      </Message>,
-    ]);
-
-    const geminiModel = google("gemini-1.5-pro", {
-      safetySettings: [
-        { category: "HATE", threshold: "BLOCK_NONE" },
-        { category: "VIOLENCE", threshold: "BLOCK_NONE" },
-        { category: "SELF_HARM", threshold: "BLOCK_NONE" },
-        { category: "SEXUAL", threshold: "BLOCK_NONE" },
-        { category: "HARASSMENT", threshold: "BLOCK_NONE" },
-      ],
-    });
-
-    try {
-      const response = await sendMessage({
-        model: geminiModel,
-        prompt: userMessage,
-      });
-      setMessages((messages) => [...messages, response]);
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  };
 
   return (
     <div className="flex flex-row justify-center pb-20 h-dvh bg-white dark:bg-zinc-900">
@@ -119,9 +86,10 @@ export default function Home() {
                               content={action.action}
                             />,
                           ]);
-                          const response: ReactNode = await sendMessage(
-                            action.action,
-                          );
+                          const response: ReactNode = await sendMessage({
+                            model: geminiModel,
+                            prompt: action.action,
+                          });
                           setMessages((messages) => [...messages, response]);
                         }}
                         className="w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
@@ -143,7 +111,23 @@ export default function Home() {
 
         <form
           className="flex flex-col gap-2 relative items-center"
-          onSubmit={handleSubmit}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!input.trim()) return;
+
+            setMessages((messages) => [
+              ...messages,
+              <Message key={messages.length} role="user" content={input} />,
+            ]);
+            setInput("");
+
+            sendMessage({
+              model: geminiModel,
+              prompt: input,
+            }).then((response: ReactNode) => {
+              setMessages((messages) => [...messages, response]);
+            });
+          }}
         >
           <input
             ref={inputRef}
