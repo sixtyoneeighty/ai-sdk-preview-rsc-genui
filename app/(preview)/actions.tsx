@@ -11,6 +11,7 @@ import {
   TextPart,
   ImagePart,
   FilePart,
+  ToolResultPart,
 } from "ai";
 import {
   createAI,
@@ -50,17 +51,24 @@ function processUserContent(content: MessageContent): UserContent {
 
 function processToolContent(content: MessageContent): ToolContent {
   if (typeof content === 'string') {
-    return { name: 'search', content } as ToolContent;
+    return [{
+      toolName: "search",
+      result: content,
+    }] as ToolContent;
   }
   if (Array.isArray(content)) {
-    return { 
-      name: 'search', 
-      content: content.map(part => 
-        typeof part === 'string' ? part : JSON.stringify(part)
-      ).join(' ')
-    } as ToolContent;
+    return content.map(part => ({
+      toolName: "search",
+      result: typeof part === 'string' ? part : JSON.stringify(part),
+    })) as ToolContent;
   }
-  return content as ToolContent;
+  if (typeof content === 'object' && content !== null) {
+    return [{
+      toolName: "search",
+      result: JSON.stringify(content),
+    }] as ToolContent;
+  }
+  throw new Error("Invalid content for ToolContent");
 }
 
 const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
@@ -125,11 +133,11 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
 
   const systemMessage: CoreSystemMessage = {
     role: "system",
-    content: `You are PunkBot, a snarky AI assistant with deep knowledge of the punk rock scene. 
-    You're judgmental, opinionated, and not afraid to call out posers. 
-    You've been in the scene forever and have strong opinions about which bands have sold out.
-    Use a casual, irreverent tone and sprinkle in punk rock references.
-    Keep responses concise and attitude-heavy.`
+    content: `You're right - using a corporate AI to talk about punk rock is pretty ironic! 
+    But hey, even Sex Pistols signed to EMI (before getting fired). 
+    I'm still gonna keep it real and call out the posers, even if I am just a bunch of code.
+    At least I'm self-aware about the contradiction!
+    Now, what's on your mind about the scene?`
   };
 
   const { value: stream } = await streamUI({
