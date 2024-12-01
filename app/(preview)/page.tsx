@@ -7,7 +7,7 @@ import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { google } from "@ai-sdk/google";
-import { geminiModel, safetySettings, HarmCategory, HarmThreshold } from "./config/aiConfig";
+import { modelConfig, MODEL_NAME, SafetySetting } from "./config/aiConfig";
 import { CoreUserMessage } from "ai";
 
 export default function Home() {
@@ -90,7 +90,7 @@ export default function Home() {
                             />,
                           ]);
                           const response: ReactNode = await sendMessage({
-                            model: geminiModel,
+                            model: modelConfig,
                             prompt: action.action,
                           });
                           setMessages((messages) => [...messages, response]);
@@ -143,20 +143,17 @@ export default function Home() {
             ]);
             setInput("");
 
-            // Create serializable model config with proper types
-            const modelConfig = {
-              name: geminiModel.name,
+            // Create serializable model config
+            const serializableConfig = {
+              modelName: MODEL_NAME,
               configuration: {
-                safetySettings: safetySettings.map(setting => ({
-                  category: setting.category,
-                  threshold: setting.threshold
-                }))
+                safetySettings: modelConfig.safetySettings
               }
             };
 
             // Send only serializable data to server
             sendMessage({
-              model: modelConfig,
+              model: serializableConfig,
               prompt: userMessage.content,
             }).then((response: ReactNode) => {
               setMessages((messages) => [...messages, response]);

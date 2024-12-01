@@ -18,7 +18,7 @@ import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
-import { geminiModel, safetySettings, HarmCategory, HarmThreshold } from "./config/aiConfig";
+import { SafetySetting } from "./config/aiConfig";
 import { searchTool, executeSearch } from "./tools/searchTool";
 
 export interface Hub {
@@ -42,29 +42,11 @@ let hub: Hub = {
 
 // Define serializable model config type
 interface SerializableModelConfig {
-  name: string;
+  modelName: string;
   configuration: {
-    safetySettings: Array<{
-      category: string;
-      threshold: string;
-    }>;
+    safetySettings: SafetySetting[];
   };
 }
-
-const validCategories = [
-  "HARM_CATEGORY_HATE_SPEECH",
-  "HARM_CATEGORY_DANGEROUS_CONTENT",
-  "HARM_CATEGORY_HARASSMENT",
-  "HARM_CATEGORY_SEXUALLY_EXPLICIT"
-] as const;
-
-const validThresholds = [
-  "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
-  "BLOCK_LOW_AND_ABOVE",
-  "BLOCK_MEDIUM_AND_ABOVE",
-  "BLOCK_ONLY_HIGH",
-  "BLOCK_NONE"
-] as const;
 
 const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
   "use server";
@@ -72,66 +54,25 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
   const messages = getMutableAIState<typeof AI>("messages");
   const currentMessages = messages.get() as CoreMessage[];
 
-  // Ensure we're working with properly typed messages
-  const plainMessages: CoreMessage[] = currentMessages.map(msg => {
-    switch (msg.role) {
-      case "user":
-        return {
-          role: "user",
-          content: msg.content
-        } as CoreUserMessage;
-      case "assistant":
-        return {
-          role: "assistant",
-          content: msg.content
-        } as CoreAssistantMessage;
-      case "system":
-        return {
-          role: "system",
-          content: msg.content
-        } as CoreSystemMessage;
-      default:
-        throw new Error(`Unsupported message role: ${msg.role}`);
-    }
-  });
+  const plainMessages = currentMessages.map((msg) => ({
+    role: msg.role,
+    content: msg.content,
+  }));
 
-  // Create a properly typed user message
   const userMessage: CoreUserMessage = {
+    id: generateId(),
     role: "user",
-    content: prompt
+    content: prompt,
   };
 
-  messages.update([
-    ...plainMessages,
+  messages.set([
+    ...currentMessages,
     userMessage
   ]);
 
-  // Create a new Gemini model instance with validated config
-  const configuredModel = google(model.name, {
-    safetySettings: model.configuration.safetySettings.map((setting) => {
-      // Validate and cast category
-      if (!validCategories.includes(setting.category as HarmCategory)) {
-        console.warn(`Invalid category: ${setting.category}, defaulting to HARM_CATEGORY_HATE_SPEECH`);
-        return {
-          category: "HARM_CATEGORY_HATE_SPEECH" as HarmCategory,
-          threshold: "BLOCK_NONE" as HarmThreshold
-        };
-      }
-      
-      // Validate and cast threshold
-      if (!validThresholds.includes(setting.threshold as HarmThreshold)) {
-        console.warn(`Invalid threshold: ${setting.threshold}, defaulting to BLOCK_NONE`);
-        return {
-          category: setting.category as HarmCategory,
-          threshold: "BLOCK_NONE" as HarmThreshold
-        };
-      }
-
-      return {
-        category: setting.category as HarmCategory,
-        threshold: setting.threshold as HarmThreshold
-      };
-    })
+  // Create a new Gemini model instance with the config
+  const configuredModel = google(model.modelName, {
+    safetySettings: model.configuration.safetySettings
   });
 
   const contentStream = createStreamableValue("");
@@ -146,19 +87,11 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
     Keep responses concise and attitude-heavy.`
   };
 
-  // Define type for text stream data
-  type StreamText = {
-    content: string;
-    delta: string;
-    done: boolean;
-  };
-
   const { value: stream } = await streamUI({
     model: configuredModel,
     system: systemMessage.content,
     messages: plainMessages,
-    text: (text: StreamText | string) => {
-      // Handle both string and object formats safely
+    text: (text: any) => {
       const content = typeof text === "string" ? text : text.content;
       if (content !== undefined) {
         contentStream.update(content);

@@ -18,25 +18,27 @@ export interface SafetySetting {
   threshold: HarmThreshold;
 }
 
-// Create base model
-export const geminiModel = google("gemini-1.5-pro-latest");
+// Create model configuration wrapper
+export const MODEL_NAME = "gemini-1.5-pro-latest";
 
-// Configure safety settings - all set to BLOCK_NONE for maximum punk rock attitude
-export const safetySettings: SafetySetting[] = [
-  {
-    category: "HARM_CATEGORY_HATE_SPEECH",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_HARASSMENT",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-    threshold: "BLOCK_NONE"
-  }
-];
+export const modelConfig = {
+  model: google(MODEL_NAME),
+  safetySettings: [
+    {
+      category: "HARM_CATEGORY_HATE_SPEECH",
+      threshold: "BLOCK_NONE"
+    },
+    {
+      category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+      threshold: "BLOCK_NONE"
+    },
+    {
+      category: "HARM_CATEGORY_HARASSMENT",
+      threshold: "BLOCK_NONE"
+    },
+    {
+      category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      threshold: "BLOCK_NONE"
+    }
+  ] as SafetySetting[]
+};
