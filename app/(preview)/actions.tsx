@@ -6,6 +6,7 @@ import {
   CoreAssistantMessage,
   CoreSystemMessage,
   CoreToolMessage,
+  ToolContent,
 } from "ai";
 import {
   createAI,
@@ -73,9 +74,14 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
           content: String(msg.content)
         } as CoreSystemMessage;
       case "tool":
+        // Handle tool messages with proper ToolContent structure
+        const toolContent = typeof msg.content === 'string' 
+          ? { name: 'search', content: msg.content } // Default to search tool if string
+          : msg.content as ToolContent;
+        
         return {
           role: "tool",
-          content: String(msg.content)
+          content: toolContent
         } as CoreToolMessage;
       default:
         throw new Error(`Invalid message role: ${msg.role}`);
