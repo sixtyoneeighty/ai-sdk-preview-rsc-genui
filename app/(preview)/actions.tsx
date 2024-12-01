@@ -8,7 +8,7 @@ import {
   CoreToolMessage,
   ToolContent,
   UserContent,
-  TextPart$1,
+  TextPart,
   ImagePart,
   FilePart,
 } from "ai";
@@ -22,7 +22,7 @@ import { SafetySetting } from "./config/aiConfig";
 import { searchTool } from "./tools/searchTool";
 
 // Define message content types
-type MessageContent = string | { type: string; content: any } | (TextPart$1 | ImagePart | FilePart)[];
+type MessageContent = string | { type: string; content: any } | (TextPart | ImagePart | FilePart)[];
 
 // Define base message type
 interface BaseMessage {
