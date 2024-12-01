@@ -151,7 +151,7 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
     let fullResponse = "";
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gemini-1.5-pro",
         messages,
         temperature: 0.9,
         stream: true,
