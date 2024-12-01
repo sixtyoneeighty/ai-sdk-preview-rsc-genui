@@ -274,13 +274,11 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
 export type UIState = Array<ReactNode>;
 
 export type AIState = {
-  chatId: string;
   messages: Array<CoreMessage>;
 };
 
 export const AI = createAI<AIState, UIState>({
   initialAIState: {
-    chatId: generateId(),
     messages: [],
   },
   initialUIState: [],
@@ -289,9 +287,8 @@ export const AI = createAI<AIState, UIState>({
   },
   onSetAIState: async ({ state, done }) => {
     "use server";
-
     if (done) {
-      // save to database
+      // Handle completion
     }
   },
 });
