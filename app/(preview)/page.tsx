@@ -6,7 +6,7 @@ import { Message } from "@/components/message";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { google } from "@google-cloud/aiplatform";
+import { google } from "@ai-sdk/google";
 
 export default function Home() {
   const { sendMessage } = useActions();
