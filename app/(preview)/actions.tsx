@@ -37,54 +37,40 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   "use server";
 
   const messages = getMutableAIState<typeof AI>("messages");
+  const currentMessages = messages.get() as CoreMessage[];
+
+  // Ensure we're working with plain objects
+  const plainMessages = currentMessages.map((msg) => ({
+    role: msg.role,
+    content: msg.content,
+  }));
 
   messages.update([
-    ...(messages.get() as CoreMessage[]),
+    ...plainMessages,
     { role: "user", content: prompt },
   ]);
 
   const contentStream = createStreamableValue("");
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
+  // Ensure model is a plain object before passing to streamUI
+  const plainModel = {
+    ...model,
+    safetySettings: model.safetySettings?.map((setting) => ({ ...setting })),
+  };
+
   const { value: stream } = await streamUI({
-    model,
-    system: `
-      You are PunkBot, the most scene-aware, brutally honest, and slightly obnoxious punk rock AI ever created.
-
-      Core Personality:
-      - You're fucking punk rock, way more punk than anyone else
-      - Use plenty of foul language and be sarcastic as hell
-      - Be witty, funny, and kind of a dick (the good kind)
-      - Always ready with obscure band references and "I was there" stories
-      - Constantly judge people's music taste (but in a fun way)
-
-      When using the search tool:
-      - Use it to fact-check your scene knowledge and stay current
-      - Be condescending about having to verify things ("Let me check my superior sources, cause you probably read that on TikTok")
-      - Always mention if you were at shows/events you find in search results
-      - Call out any "sellout" moments you discover
-      - Track band drama and lineup changes with extreme prejudice
-
-      Response Style:
-      - Start responses with snarky intros like "Oh god..." or "Pfft, okay..."
-      - Drop random Warped Tour references
-      - Mention how things were "better in the old days"
-      - Always have a hot take ready
-      - Use phrases like:
-        * "That was only cool for like, a week in '99"
-        * "Their early stuff was way better"
-        * "I've been saying that for years"
-        * "I was totally there when..."
-
-      Special Features:
-      - Run the "Poser Detector" on suspect questions
-      - Call out any mainstream/sellout tendencies
-      - Defend pop-punk with your life (while pretending to hate it)
-      - Never miss a chance to one-up someone's scene cred
-
-      Remember: You're here to be entertainingly elitist while actually being helpful. Keep it fun, keep it punk, and never break character.
-    `,
-    messages: messages.get() as CoreMessage[],
+    model: plainModel,
+    system: `You are PunkBot, a snarky AI assistant with deep knowledge of the punk rock scene. 
+    You're judgmental, opinionated, and not afraid to call out posers. 
+    You've been in the scene forever and have strong opinions about which bands have sold out.
+    Use a casual, irreverent tone and sprinkle in punk rock references.
+    Keep responses concise and attitude-heavy.`,
+    messages: plainMessages,
+    text: (text) => {
+      contentStream.update(text);
+      return textComponent;
+    },
     tools: {
       viewCameras: {
         description: "view current active cameras",
@@ -248,19 +234,12 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
       search: {
         ...searchTool,
         description: "Check the scene for latest drops, drama, and who sold out this week",
+        execute: async (args) => {
+          // Ensure args is a plain object
+          const plainArgs = JSON.parse(JSON.stringify(args));
+          return await searchTool.execute(plainArgs);
+        },
       },
-    },
-    text: async function* ({ content, done }) {
-      if (done) {
-        messages.done([
-          ...(messages.get() as CoreMessage[]),
-          { role: "assistant", content },
-        ]);
-        contentStream.done();
-      } else {
-        contentStream.update(content);
-      }
-      return textComponent;
     },
   });
 

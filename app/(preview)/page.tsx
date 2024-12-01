@@ -117,14 +117,28 @@ export default function Home() {
             e.preventDefault();
             if (!input.trim()) return;
 
+            // Create plain message object
+            const plainMessage = {
+              role: "user" as const,
+              content: input,
+            };
+
             setMessages((messages) => [
               ...messages,
               <Message key={messages.length} role="user" content={input} />,
             ]);
             setInput("");
 
+            // Ensure model is a plain object
+            const plainModel = {
+              ...geminiModel,
+              safetySettings: geminiModel.safetySettings?.map(setting => ({
+                ...setting
+              }))
+            };
+
             sendMessage({
-              model: geminiModel,
+              model: plainModel,
               prompt: input,
             }).then((response: ReactNode) => {
               setMessages((messages) => [...messages, response]);
