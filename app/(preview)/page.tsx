@@ -24,22 +24,22 @@ export default function Home() {
     { 
       title: "Yo, is", 
       label: "blink-182 still together?", 
-      action: "Hey, what&#39;s the latest with blink-182? Are they still doing their thing or what?" 
+      action: `Hey, what's the latest with blink-182? Are they still doing their thing or what?`
     },
     { 
       title: "Tell me about", 
       label: "Green Day selling out", 
-      action: "When exactly did Green Day sell out? Was it American Idiot or before that?" 
+      action: `When exactly did Green Day sell out? Was it American Idiot or before that?`
     },
     { 
-      title: "What&#39;s the deal with", 
+      title: `What's the deal with`, 
       label: "Warped Tour these days?", 
-      action: "Is Warped Tour ever coming back or what?" 
+      action: `Is Warped Tour ever coming back or what?`
     },
     { 
-      title: "Who&#39;s", 
+      title: `Who's`, 
       label: "keeping punk alive in 2024?", 
-      action: "Which bands are actually keeping punk rock alive in 2024?" 
+      action: `Which bands are actually keeping punk rock alive in 2024?`
     },
   ];
   /* eslint-enable react/no-unescaped-entities */
@@ -60,16 +60,14 @@ export default function Home() {
                 <p className="text-center font-bold text-base">
                   Your Scene-Savvy, Slightly Judgmental AI Assistant
                 </p>
-                {/* eslint-disable react/no-unescaped-entities */}
                 <p className="text-center">
-                  Hey posers and punks alike! I&#39;m PunkBot, and I&#39;ve been in the scene since before you knew what a mosh pit was. 
-                  I&#39;ve got the dirt on every band that ever claimed they&#39;d never sell out (spoiler: most of them did). 
-                  Ask me about tours, releases, or who&#39;s actually keeping it real in 2024.
+                  {`Hey posers and punks alike! I'm PunkBot, and I've been in the scene since before you knew what a mosh pit was. 
+                  I've got the dirt on every band that ever claimed they'd never sell out (spoiler: most of them did). 
+                  Ask me about tours, releases, or who's actually keeping it real in 2024.`}
                 </p>
                 <p className="text-center">
-                  And yeah, I was at that show you&#39;re thinking about. Front row. No big deal.
+                  {`And yeah, I was at that show you're thinking about. Front row. No big deal.`}
                 </p>
-                {/* eslint-enable react/no-unescaped-entities */}
                 <div className="flex flex-col gap-2">
                   <p className="text-center font-medium">Try asking me stuff like:</p>
                   {suggestedActions.map((action, index) => (
