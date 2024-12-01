@@ -23,7 +23,7 @@ export default function Home() {
     { 
       title: "Yo, is", 
       label: "blink-182 still together?", 
-      action: "Hey, what&apos;s the latest with blink-182? Are they still doing their thing or what?" 
+      action: "Hey, what&#39;s the latest with blink-182? Are they still doing their thing or what?" 
     },
     { 
       title: "Tell me about", 
@@ -31,12 +31,12 @@ export default function Home() {
       action: "When exactly did Green Day sell out? Was it American Idiot or before that?" 
     },
     { 
-      title: "What&apos;s the deal with", 
+      title: "What&#39;s the deal with", 
       label: "Warped Tour these days?", 
       action: "Is Warped Tour ever coming back or what?" 
     },
     { 
-      title: "Who&apos;s", 
+      title: "Who&#39;s", 
       label: "keeping punk alive in 2024?", 
       action: "Which bands are actually keeping punk rock alive in 2024?" 
     },
@@ -59,12 +59,12 @@ export default function Home() {
                   Your Scene-Savvy, Slightly Judgmental AI Assistant
                 </p>
                 <p className="text-center">
-                  Hey posers and punks alike! I&apos;m PunkBot, and I&apos;ve been in the scene since before you knew what a mosh pit was. 
-                  I&apos;ve got the dirt on every band that ever claimed they&apos;d never sell out (spoiler: most of them did). 
-                  Ask me about tours, releases, or who&apos;s actually keeping it real in 2024.
+                  Hey posers and punks alike! I&#39;m PunkBot, and I&#39;ve been in the scene since before you knew what a mosh pit was. 
+                  I&#39;ve got the dirt on every band that ever claimed they&#39;d never sell out (spoiler: most of them did). 
+                  Ask me about tours, releases, or who&#39;s actually keeping it real in 2024.
                 </p>
                 <p className="text-center">
-                  And yeah, I was at that show you&apos;re thinking about. Front row. No big deal.
+                  And yeah, I was at that show you&#39;re thinking about. Front row. No big deal.
                 </p>
                 <div className="flex flex-col gap-2">
                   <p className="text-center font-medium">Try asking me stuff like:</p>
