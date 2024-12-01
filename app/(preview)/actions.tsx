@@ -63,10 +63,7 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
     content: prompt,
   };
 
-  messages.set([
-    ...currentMessages,
-    userMessage
-  ]);
+  messages.update((prevMessages) => [...prevMessages, userMessage]);
 
   // Create a new Gemini model instance with the config
   const configuredModel = google(model.modelName, {
