@@ -117,15 +117,15 @@ export default function Home() {
             e.preventDefault();
             if (!input.trim()) return;
 
-            // Create plain message object
-            const plainMessage = {
-              role: "user" as const,
-              content: input,
+            // Create a properly typed user message
+            const userMessage: CoreUserMessage = {
+              role: "user",
+              content: input
             };
 
             setMessages((messages) => [
               ...messages,
-              <Message key={messages.length} role="user" content={input} />,
+              <Message key={messages.length} role={userMessage.role} content={userMessage.content} />,
             ]);
             setInput("");
 
@@ -139,7 +139,7 @@ export default function Home() {
 
             sendMessage({
               model: plainModel,
-              prompt: input,
+              prompt: userMessage.content,
             }).then((response: ReactNode) => {
               setMessages((messages) => [...messages, response]);
             });

@@ -1,6 +1,12 @@
 import { Message, TextStreamMessage } from "@/components/message";
 import { google } from "@ai-sdk/google";
-import { CoreMessage, generateId } from "ai";
+import { 
+  CoreMessage, 
+  CoreUserMessage, 
+  CoreAssistantMessage,
+  CoreSystemMessage,
+  generateId 
+} from "ai";
 import {
   createAI,
   createStreamableValue,
@@ -39,15 +45,38 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   const messages = getMutableAIState<typeof AI>("messages");
   const currentMessages = messages.get() as CoreMessage[];
 
-  // Ensure we're working with plain objects
-  const plainMessages = currentMessages.map((msg) => ({
-    role: msg.role,
-    content: msg.content,
-  }));
+  // Ensure we're working with properly typed messages
+  const plainMessages: CoreMessage[] = currentMessages.map(msg => {
+    switch (msg.role) {
+      case "user":
+        return {
+          role: "user",
+          content: msg.content
+        } as CoreUserMessage;
+      case "assistant":
+        return {
+          role: "assistant",
+          content: msg.content
+        } as CoreAssistantMessage;
+      case "system":
+        return {
+          role: "system",
+          content: msg.content
+        } as CoreSystemMessage;
+      default:
+        throw new Error(`Unsupported message role: ${msg.role}`);
+    }
+  });
+
+  // Create a properly typed user message
+  const userMessage: CoreUserMessage = {
+    role: "user",
+    content: prompt
+  };
 
   messages.update([
     ...plainMessages,
-    { role: "user", content: prompt },
+    userMessage
   ]);
 
   const contentStream = createStreamableValue("");
@@ -56,16 +85,23 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   // Ensure model is a plain object before passing to streamUI
   const plainModel = {
     ...model,
-    safetySettings: model.safetySettings?.map((setting) => ({ ...setting })),
+    safetySettings: model.safetySettings?.map(setting => ({
+      ...setting
+    }))
+  };
+
+  const systemMessage: CoreSystemMessage = {
+    role: "system",
+    content: `You are PunkBot, a snarky AI assistant with deep knowledge of the punk rock scene. 
+    You're judgmental, opinionated, and not afraid to call out posers. 
+    You've been in the scene forever and have strong opinions about which bands have sold out.
+    Use a casual, irreverent tone and sprinkle in punk rock references.
+    Keep responses concise and attitude-heavy.`
   };
 
   const { value: stream } = await streamUI({
     model: plainModel,
-    system: `You are PunkBot, a snarky AI assistant with deep knowledge of the punk rock scene. 
-    You're judgmental, opinionated, and not afraid to call out posers. 
-    You've been in the scene forever and have strong opinions about which bands have sold out.
-    Use a casual, irreverent tone and sprinkle in punk rock references.
-    Keep responses concise and attitude-heavy.`,
+    system: systemMessage.content,
     messages: plainMessages,
     text: (text) => {
       contentStream.update(text);
@@ -238,9 +274,9 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
           // Ensure args is a plain object
           const plainArgs = JSON.parse(JSON.stringify(args));
           return await searchTool.execute(plainArgs);
-        },
-      },
-    },
+        }
+      }
+    }
   });
 
   return stream;
