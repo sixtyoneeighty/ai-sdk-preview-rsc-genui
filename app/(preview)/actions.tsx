@@ -14,32 +14,17 @@ import {
   getMutableAIState,
   streamUI,
 } from "ai/rsc";
-import { ReactNode } from "react";
-import { z } from "zod";
-import { CameraView } from "@/components/camera-view";
-import { HubView } from "@/components/hub-view";
-import { UsageView } from "@/components/usage-view";
 import { SafetySetting } from "./config/aiConfig";
-import { searchTool, executeSearch } from "./tools/searchTool";
+import { searchTool } from "./tools/searchTool";
 
-export interface Hub {
-  climate: Record<"low" | "high", number>;
-  lights: Array<{ name: string; status: boolean }>;
-  locks: Array<{ name: string; isLocked: boolean }>;
+// Define message role type
+type MessageRole = CoreMessage['role'];
+
+// Define base message type
+interface BaseMessage {
+  role: MessageRole;
+  content: string | ToolContent;
 }
-
-let hub: Hub = {
-  climate: {
-    low: 23,
-    high: 25,
-  },
-  lights: [
-    { name: "patio", status: true },
-    { name: "kitchen", status: false },
-    { name: "garage", status: true },
-  ],
-  locks: [{ name: "back door", isLocked: true }],
-};
 
 // Define serializable model config type
 interface SerializableModelConfig {
@@ -55,8 +40,8 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
   const messages = getMutableAIState<typeof AI>("messages");
   const currentMessages = messages.get() as CoreMessage[];
 
-  // Map messages to their proper types
-  const plainMessages: CoreMessage[] = currentMessages.map((msg): CoreMessage => {
+  // Map messages to their proper types with type checking
+  const plainMessages: CoreMessage[] = currentMessages.map((msg: BaseMessage): CoreMessage => {
     switch (msg.role) {
       case "user":
         return {
@@ -84,7 +69,9 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
           content: toolContent
         } as CoreToolMessage;
       default:
-        throw new Error(`Invalid message role: ${msg.role}`);
+        // Type guard to ensure all cases are handled
+        const _exhaustiveCheck: never = msg.role;
+        throw new Error(`Invalid message role: ${_exhaustiveCheck}`);
     }
   });
 
@@ -127,174 +114,9 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
       return textComponent;
     },
     tools: {
-      viewCameras: {
-        description: "view current active cameras",
-        parameters: z.object({}),
-        generate: async function* ({}) {
-          const toolCallId = generateId();
-
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "viewCameras",
-                  args: {},
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "viewCameras",
-                  toolCallId,
-                  result: `The active cameras are currently displayed on the screen`,
-                },
-              ],
-            },
-          ]);
-
-          return <Message role="assistant" content={<CameraView />} />;
-        },
-      },
-      viewHub: {
-        description:
-          "view the hub that contains current quick summary and actions for temperature, lights, and locks",
-        parameters: z.object({}),
-        generate: async function* ({}) {
-          const toolCallId = generateId();
-
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "viewHub",
-                  args: {},
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "viewHub",
-                  toolCallId,
-                  result: hub,
-                },
-              ],
-            },
-          ]);
-
-          return <Message role="assistant" content={<HubView hub={hub} />} />;
-        },
-      },
-      updateHub: {
-        description: "update the hub with new values",
-        parameters: z.object({
-          hub: z.object({
-            climate: z.object({
-              low: z.number(),
-              high: z.number(),
-            }),
-            lights: z.array(
-              z.object({ name: z.string(), status: z.boolean() }),
-            ),
-            locks: z.array(
-              z.object({ name: z.string(), isLocked: z.boolean() }),
-            ),
-          }),
-        }),
-        generate: async function* ({ hub: newHub }) {
-          hub = newHub;
-          const toolCallId = generateId();
-
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "updateHub",
-                  args: { hub },
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "updateHub",
-                  toolCallId,
-                  result: `The hub has been updated with the new values`,
-                },
-              ],
-            },
-          ]);
-
-          return <Message role="assistant" content={<HubView hub={hub} />} />;
-        },
-      },
-      viewUsage: {
-        description: "view current usage for electricity, water, or gas",
-        parameters: z.object({
-          type: z.enum(["electricity", "water", "gas"]),
-        }),
-        generate: async function* ({ type }) {
-          const toolCallId = generateId();
-
-          messages.done([
-            ...(messages.get() as CoreMessage[]),
-            {
-              role: "assistant",
-              content: [
-                {
-                  type: "tool-call",
-                  toolCallId,
-                  toolName: "viewUsage",
-                  args: { type },
-                },
-              ],
-            },
-            {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName: "viewUsage",
-                  toolCallId,
-                  result: `The current usage for ${type} is currently displayed on the screen`,
-                },
-              ],
-            },
-          ]);
-
-          return (
-            <Message role="assistant" content={<UsageView type={type} />} />
-          );
-        },
-      },
-      search: searchTool,
+      search: searchTool
     }
   });
-
-  // Handle tool execution separately if needed
-  const handleToolExecution = async (args: any) => {
-    const plainArgs = JSON.parse(JSON.stringify(args));
-    return await executeSearch(plainArgs);
-  };
 
   return stream;
 };
