@@ -7,7 +7,7 @@ import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { google } from "@ai-sdk/google";
-import { geminiModel, SafetySetting } from "./config/aiConfig";
+import { geminiModel, safetySettings } from "./config/aiConfig";
 import { CoreUserMessage } from "ai";
 
 export default function Home() {
@@ -143,16 +143,16 @@ export default function Home() {
             ]);
             setInput("");
 
-            // Ensure model is a plain object
-            const plainModel = {
+            // Create model configuration with safety settings
+            const modelConfig = {
               ...geminiModel,
-              safetySettings: geminiModel.safetySettings?.map((setting: SafetySetting) => ({
-                ...setting
-              }))
+              configuration: {
+                safetySettings
+              }
             };
 
             sendMessage({
-              model: plainModel,
+              model: modelConfig,
               prompt: userMessage.content,
             }).then((response: ReactNode) => {
               setMessages((messages) => [...messages, response]);

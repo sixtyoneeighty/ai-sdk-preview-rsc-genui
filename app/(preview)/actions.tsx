@@ -18,7 +18,7 @@ import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
-import { SafetySetting } from "./config/aiConfig";
+import { geminiModel, safetySettings } from "./config/aiConfig";
 import { searchTool, executeSearch } from "./tools/searchTool";
 
 export interface Hub {
@@ -84,11 +84,11 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
   // Ensure model is a plain object before passing to streamUI
-  const plainModel = {
+  const modelConfig = {
     ...model,
-    safetySettings: model.safetySettings?.map((setting: SafetySetting) => ({
-      ...setting
-    }))
+    configuration: {
+      safetySettings
+    }
   };
 
   const systemMessage: CoreSystemMessage = {
@@ -108,7 +108,7 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   };
 
   const { value: stream } = await streamUI({
-    model: plainModel,
+    model: modelConfig,
     system: systemMessage.content,
     messages: plainMessages,
     text: (text: StreamText | string) => {

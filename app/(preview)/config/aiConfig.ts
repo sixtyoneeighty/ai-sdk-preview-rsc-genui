@@ -18,25 +18,25 @@ export interface SafetySetting {
   threshold: HarmThreshold;
 }
 
-// For our punk rock AI, we're setting all thresholds to BLOCK_NONE
-// because punk rock doesn't believe in censorship! 🤘
-export const geminiModel = google("gemini-1.5-pro", {
-  safetySettings: [
-    { 
-      category: "HARM_CATEGORY_HATE_SPEECH", 
-      threshold: "BLOCK_NONE" 
-    },
-    { 
-      category: "HARM_CATEGORY_DANGEROUS_CONTENT", 
-      threshold: "BLOCK_NONE" 
-    },
-    { 
-      category: "HARM_CATEGORY_HARASSMENT", 
-      threshold: "BLOCK_NONE" 
-    },
-    { 
-      category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", 
-      threshold: "BLOCK_NONE" 
-    }
-  ] as SafetySetting[]
-});
+// Create base model
+export const geminiModel = google("gemini-1.5-pro");
+
+// Define safety settings separately
+export const safetySettings: SafetySetting[] = [
+  { 
+    category: "HARM_CATEGORY_HATE_SPEECH", 
+    threshold: "BLOCK_NONE" 
+  },
+  { 
+    category: "HARM_CATEGORY_DANGEROUS_CONTENT", 
+    threshold: "BLOCK_NONE" 
+  },
+  { 
+    category: "HARM_CATEGORY_HARASSMENT", 
+    threshold: "BLOCK_NONE" 
+  },
+  { 
+    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", 
+    threshold: "BLOCK_NONE" 
+  }
+];
