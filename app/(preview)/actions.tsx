@@ -5,8 +5,7 @@ import {
   CoreUserMessage, 
   CoreAssistantMessage,
   CoreSystemMessage,
-  generateId,
-  RenderTool
+  generateId
 } from "ai";
 import {
   createAI,
@@ -20,7 +19,7 @@ import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
 import { SafetySetting } from "./config/aiConfig";
-import { searchTool, PunkSearchTool } from "./tools/searchTool";
+import { searchTool, executeSearch } from "./tools/searchTool";
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -285,12 +284,10 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
       search: {
         description: searchTool.description,
         parameters: searchTool.parameters,
-        render: async (args) => {
+        function: async (args) => {
           const plainArgs = JSON.parse(JSON.stringify(args));
-          return await searchTool.execute(plainArgs);
+          return await executeSearch(plainArgs);
         }
-      } as RenderTool & {
-        execute: (args: any) => Promise<any>;
       }
     }
   });
