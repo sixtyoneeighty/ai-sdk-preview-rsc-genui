@@ -124,9 +124,22 @@ export default function Home() {
               content: input
             };
 
+            // Transform content to ReactNode for rendering
+            const renderContent = (content: string | any): ReactNode => {
+              if (typeof content === "string") {
+                return content;
+              }
+              // Handle other content types if needed
+              return String(content);
+            };
+
             setMessages((messages) => [
               ...messages,
-              <Message key={messages.length} role={userMessage.role} content={userMessage.content} />,
+              <Message 
+                key={messages.length} 
+                role={userMessage.role} 
+                content={renderContent(userMessage.content)} 
+              />,
             ]);
             setInput("");
 
