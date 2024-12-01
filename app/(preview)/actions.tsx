@@ -17,13 +17,14 @@ import {
 import { SafetySetting } from "./config/aiConfig";
 import { searchTool } from "./tools/searchTool";
 
-// Define message role type
-type MessageRole = CoreMessage['role'];
+// Define message content types
+type MessageContent = string | { type: string; content: any };
+type ProcessedContent = string | ToolContent;
 
 // Define base message type
 interface BaseMessage {
-  role: MessageRole;
-  content: string | ToolContent;
+  role: CoreMessage['role'];
+  content: MessageContent;
 }
 
 // Define serializable model config type
@@ -34,35 +35,55 @@ interface SerializableModelConfig {
   };
 }
 
+const processMessageContent = (content: MessageContent): ProcessedContent => {
+  if (typeof content === 'string') {
+    return content;
+  }
+  
+  // Handle structured content
+  if (typeof content === 'object' && content !== null) {
+    if (Array.isArray(content)) {
+      return content.map(item => 
+        typeof item === 'string' ? item : JSON.stringify(item)
+      ).join(' ');
+    }
+    return JSON.stringify(content);
+  }
+  
+  return String(content);
+};
+
 const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
   "use server";
 
   const messages = getMutableAIState<typeof AI>("messages");
   const currentMessages = messages.get() as CoreMessage[];
 
-  // Map messages to their proper types with type checking
+  // Map messages to their proper types with content processing
   const plainMessages: CoreMessage[] = currentMessages.map((msg: BaseMessage): CoreMessage => {
+    const processedContent = processMessageContent(msg.content);
+    
     switch (msg.role) {
       case "user":
         return {
           role: "user",
-          content: String(msg.content)
+          content: processedContent as string
         } as CoreUserMessage;
       case "assistant":
         return {
           role: "assistant",
-          content: String(msg.content)
+          content: processedContent as string
         } as CoreAssistantMessage;
       case "system":
         return {
           role: "system",
-          content: String(msg.content)
+          content: processedContent as string
         } as CoreSystemMessage;
       case "tool":
         // Handle tool messages with proper ToolContent structure
-        const toolContent = typeof msg.content === 'string' 
-          ? { name: 'search', content: msg.content } // Default to search tool if string
-          : msg.content as ToolContent;
+        const toolContent = typeof processedContent === 'string' 
+          ? { name: 'search', content: processedContent }
+          : processedContent;
         
         return {
           role: "tool",
