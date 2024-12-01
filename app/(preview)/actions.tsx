@@ -40,7 +40,18 @@ let hub: Hub = {
   locks: [{ name: "back door", isLocked: true }],
 };
 
-const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) => {
+// Define serializable model config type
+interface SerializableModelConfig {
+  name: string;
+  configuration: {
+    safetySettings: Array<{
+      category: string;
+      threshold: string;
+    }>;
+  };
+}
+
+const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
   "use server";
 
   const messages = getMutableAIState<typeof AI>("messages");
@@ -80,16 +91,13 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
     userMessage
   ]);
 
+  // Create a new Gemini model instance with the config
+  const configuredModel = google(model.name, {
+    safetySettings: model.configuration.safetySettings
+  });
+
   const contentStream = createStreamableValue("");
   const textComponent = <TextStreamMessage content={contentStream.value} />;
-
-  // Ensure model is a plain object before passing to streamUI
-  const modelConfig = {
-    ...model,
-    configuration: {
-      safetySettings
-    }
-  };
 
   const systemMessage: CoreSystemMessage = {
     role: "system",
@@ -108,7 +116,7 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
   };
 
   const { value: stream } = await streamUI({
-    model: modelConfig,
+    model: configuredModel,
     system: systemMessage.content,
     messages: plainMessages,
     text: (text: StreamText | string) => {

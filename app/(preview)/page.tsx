@@ -129,10 +129,10 @@ export default function Home() {
               if (typeof content === "string") {
                 return content;
               }
-              // Handle other content types if needed
               return String(content);
             };
 
+            // Add message to UI first
             setMessages((messages) => [
               ...messages,
               <Message 
@@ -143,14 +143,18 @@ export default function Home() {
             ]);
             setInput("");
 
-            // Create model configuration with safety settings
+            // Create serializable model config
             const modelConfig = {
-              ...geminiModel,
+              name: geminiModel.name,
               configuration: {
-                safetySettings
+                safetySettings: safetySettings.map(setting => ({
+                  category: setting.category,
+                  threshold: setting.threshold
+                }))
               }
             };
 
+            // Send only serializable data to server
             sendMessage({
               model: modelConfig,
               prompt: userMessage.content,
