@@ -1,22 +1,18 @@
+"use server";
+
 import { Message } from "@/components/message";
-import { openai } from "@ai-sdk/openai";
 import { ReactNode } from "react";
-import { createAI, getMutableAIState } from "ai/rsc";
 import { TavilySearchAPI } from "@/lib/tavily";
 import { TavilySearchAPIParameters } from "@/lib/types";
+import OpenAI from "openai";
 
 // Initialize Tavily client
 const tavily = new TavilySearchAPI(process.env.TAVILY_API_KEY || '');
 
-// Create an OpenAI-compatible client with Gemini
-const client = openai(process.env.GOOGLE_API_KEY!, {
-  baseURL: "https://generativelanguage.googleapis.com/v1/models",
-  defaultQuery: {
-    model: "gemini-1.5-pro"
-  },
-  defaultHeaders: {
-    "Content-Type": "application/json",
-  },
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.GOOGLE_API_KEY,
+  baseURL: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro",
 });
 
 // Define message types
@@ -87,15 +83,9 @@ Example responses:
 Keep responses witty, sarcastic, and music-focused while still being helpful.`;
 
 export async function sendMessage(prompt: string): Promise<ReactNode> {
-  "use server";
-
-  const messages = getMutableAIState<typeof AI>("messages");
-  const currentMessages = messages.get() || [];
-
   try {
     // First, try to get real-time info if needed
-    const searchResponse = await client.chat.completions.create({
-      model: "gemini-1.5-pro",
+    const searchResponse = await openai.chat.completions.create({
       messages: [
         {
           role: "system",
@@ -119,30 +109,28 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
     }
 
     // Now generate the final response with the search results
-    const finalMessages: ChatMessage[] = [
+    const messages: ChatMessage[] = [
       {
         role: "system",
         content: PUNK_SYSTEM_PROMPT
-      },
-      ...currentMessages
+      }
     ];
 
     if (searchResults) {
-      finalMessages.push({
+      messages.push({
         role: "function",
         name: "tavily_search",
         content: JSON.stringify(searchResults)
       });
     }
 
-    finalMessages.push({
+    messages.push({
       role: "user",
       content: prompt
     });
 
-    const response = await client.chat.completions.create({
-      model: "gemini-1.5-pro",
-      messages: finalMessages,
+    const response = await openai.chat.completions.create({
+      messages,
       temperature: 0.9,
       stream: true,
     });
@@ -156,11 +144,6 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
       }
     }
 
-    // Update messages state
-    messages.update(msgs => [...msgs, { role: "user", content: prompt }]);
-    messages.update(msgs => [...msgs, { role: "assistant", content: fullResponse }]);
-
-    // Return message component with response
     return <Message role="assistant" content={fullResponse} />;
 
   } catch (error) {
@@ -168,19 +151,3 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
     return <Message role="assistant" content="Ugh, technical difficulties. Must be the corporate internet trying to keep us down. Try again, or whatever." />;
   }
 }
-
-export type UIState = Array<ReactNode>;
-
-export type AIState = {
-  messages: ChatMessage[];
-};
-
-export const AI = createAI<AIState, UIState>({
-  initialAIState: {
-    messages: [],
-  },
-  initialUIState: [],
-  actions: {
-    sendMessage,
-  },
-});

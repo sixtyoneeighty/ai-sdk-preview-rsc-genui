@@ -51,7 +51,7 @@ export const Message = ({
 
       <div className="flex flex-col gap-1 w-full">
         <div className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
-          {content}
+          {typeof content === "string" ? <Markdown>{content}</Markdown> : content}
         </div>
       </div>
     </motion.div>

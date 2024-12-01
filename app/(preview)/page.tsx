@@ -1,22 +1,14 @@
 "use client";
 
 import { ReactNode, useRef, useState } from "react";
-import { useActions } from "ai/rsc";
 import { Message } from "@/components/message";
-import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
-import { MasonryIcon, VercelIcon } from "@/components/icons";
-import Link from "next/link";
+import { sendMessage } from "./actions";
 
 export default function Home() {
-  const { sendMessage } = useActions();
-
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<Array<ReactNode>>([]);
-
   const inputRef = useRef<HTMLInputElement>(null);
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>();
 
   const suggestedActions = [
     { 
@@ -45,7 +37,6 @@ export default function Home() {
     <div className="flex flex-row justify-center pb-20 h-dvh bg-white dark:bg-zinc-900">
       <div className="flex flex-col justify-between gap-4">
         <div
-          ref={messagesContainerRef}
           className="flex flex-col gap-3 h-full w-dvw items-center overflow-y-scroll"
         >
           {messages.length === 0 && (
@@ -67,8 +58,9 @@ export default function Home() {
               </div>
             </motion.div>
           )}
-          {messages.map((message) => message)}
-          <div ref={messagesEndRef} />
+          {messages.map((message, index) => (
+            <div key={index}>{message}</div>
+          ))}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-2 w-full px-4 md:px-0 mx-auto md:max-w-[500px] mb-4">
@@ -91,9 +83,7 @@ export default function Home() {
                         content={action.action}
                       />,
                     ]);
-                    const response: ReactNode = await sendMessage(
-                      action.action,
-                    );
+                    const response = await sendMessage(action.action);
                     setMessages((messages) => [...messages, response]);
                   }}
                   className="w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
@@ -118,7 +108,7 @@ export default function Home() {
             ]);
             setInput("");
 
-            const response: ReactNode = await sendMessage(input);
+            const response = await sendMessage(input);
             setMessages((messages) => [...messages, response]);
           }}
         >
