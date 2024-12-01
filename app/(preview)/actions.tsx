@@ -13,7 +13,8 @@ const tavily = new TavilySearchAPI(process.env.TAVILY_API_KEY || '');
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"});
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+});
 
 // Define Tavily function schema
 const tavilyFunction = {
@@ -77,8 +78,8 @@ Keep responses witty, sarcastic, and music-focused while still being helpful.`;
 
 export async function sendMessage(prompt: string): Promise<ReactNode> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not set");
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not set");
     }
 
     // First, try to get real-time info if needed
@@ -100,9 +101,10 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
         functions: [tavilyFunction],
         temperature: 0.7,
       });
+      console.log("Initial API call successful");
     } catch (modelError) {
-      console.error("Error with model call:", modelError);
-      throw new Error(`Model API error: ${modelError instanceof Error ? modelError.message : 'Unknown error'}`);
+      console.error("Error with Gemini API call:", modelError);
+      throw new Error(`Gemini API error: ${modelError instanceof Error ? modelError.message : 'Unknown error'}`);
     }
 
     console.log("Search response received:", searchResponse.choices[0]?.message);
