@@ -12,8 +12,8 @@ const tavily = new TavilySearchAPI(process.env.TAVILY_API_KEY || '');
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.GOOGLE_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro/chat/completions",
+  apiKey: process.env.GEMINI_API_KEY,,
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
 // Define Tavily function schema
@@ -78,7 +78,12 @@ Keep responses witty, sarcastic, and music-focused while still being helpful.`;
 
 export async function sendMessage(prompt: string): Promise<ReactNode> {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not set");
+    }
+
     // First, try to get real-time info if needed
+    console.log("Attempting initial search query...");
     const searchResponse = await openai.chat.completions.create({
       model: "gemini-1.5-pro",
       messages: [
@@ -95,12 +100,16 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
       temperature: 0.7,
     });
 
+    console.log("Search response received:", searchResponse.choices[0]?.message);
+
     let searchResults = null;
     const functionCall = searchResponse.choices[0]?.message?.function_call;
     
     if (functionCall?.name === "tavily_search") {
+      console.log("Performing Tavily search with args:", functionCall.arguments);
       const args = JSON.parse(functionCall.arguments || "{}");
       searchResults = await performTavilySearch(args);
+      console.log("Search results:", searchResults);
     }
 
     // Now generate the final response with the search results
@@ -124,8 +133,9 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
       content: prompt
     });
 
+    console.log("Generating final response...");
     const response = await openai.chat.completions.create({
-      model: "gemini-1.5-pro",
+      model: "gpt-3.5-turbo",
       messages,
       temperature: 0.9,
       stream: true,
@@ -140,10 +150,18 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
       }
     }
 
+    console.log("Final response generated:", fullResponse.substring(0, 100) + "...");
     return <Message role="assistant" content={fullResponse} />;
 
   } catch (error) {
     console.error("Error in sendMessage:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
     return <Message role="assistant" content="Ugh, technical difficulties. Must be the corporate internet trying to keep us down. Try again, or whatever." />;
   }
 }
