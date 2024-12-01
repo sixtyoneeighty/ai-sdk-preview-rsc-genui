@@ -4,7 +4,7 @@ This example demonstrates how to use the [Vercel AI SDK](https://sdk.vercel.ai/d
 
 ## Deploy your own
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fai-sdk-preview-rsc-genui&env=OPENAI_API_KEY&envDescription=API%20keys%20needed%20for%20application&envLink=platform.openai.com)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fai-sdk-preview-rsc-genui&env=google_API_KEY&envDescription=API%20keys%20needed%20for%20application&envLink=platform.google.com)
 
 ## How to use
 
@@ -24,7 +24,7 @@ pnpm create next-app --example https://github.com/vercel-labs/ai-sdk-preview-rsc
 
 To run the example locally you need to:
 
-1. Sign up for accounts with the AI providers you want to use (e.g., OpenAI, Anthropic).
+1. Sign up for accounts with the AI providers you want to use (e.g., google, Anthropic).
 2. Obtain API keys for each provider.
 3. Set the required environment variables as shown in the `.env.example` file, but in a new file called `.env`.
 4. `npm install` to install the required dependencies.

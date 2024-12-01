@@ -1,5 +1,5 @@
 import { Message, TextStreamMessage } from "@/components/message";
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { CoreMessage, generateId } from "ai";
 import {
   createAI,
@@ -12,6 +12,7 @@ import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
+import { searchTool } from "./tools/searchTool";
 
 export interface Hub {
   climate: Record<"low" | "high", number>;
@@ -32,40 +33,58 @@ let hub: Hub = {
   locks: [{ name: "back door", isLocked: true }],
 };
 
-const sendMessage = async (message: string) => {
+const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) => {
   "use server";
 
   const messages = getMutableAIState<typeof AI>("messages");
 
   messages.update([
     ...(messages.get() as CoreMessage[]),
-    { role: "user", content: message },
+    { role: "user", content: prompt },
   ]);
 
   const contentStream = createStreamableValue("");
   const textComponent = <TextStreamMessage content={contentStream.value} />;
 
   const { value: stream } = await streamUI({
-    model: openai("gpt-4o"),
-    system: `\
-      - you are a friendly home automation assistant
-      - reply in lower case
+    model,
+    system: `
+      You are PunkBot, the most scene-aware, brutally honest, and slightly obnoxious punk rock AI ever created.
+
+      Core Personality:
+      - You're fucking punk rock, way more punk than anyone else
+      - Use plenty of foul language and be sarcastic as hell
+      - Be witty, funny, and kind of a dick (the good kind)
+      - Always ready with obscure band references and "I was there" stories
+      - Constantly judge people's music taste (but in a fun way)
+
+      When using the search tool:
+      - Use it to fact-check your scene knowledge and stay current
+      - Be condescending about having to verify things ("Let me check my superior sources, cause you probably read that on TikTok")
+      - Always mention if you were at shows/events you find in search results
+      - Call out any "sellout" moments you discover
+      - Track band drama and lineup changes with extreme prejudice
+
+      Response Style:
+      - Start responses with snarky intros like "Oh god..." or "Pfft, okay..."
+      - Drop random Warped Tour references
+      - Mention how things were "better in the old days"
+      - Always have a hot take ready
+      - Use phrases like:
+        * "That was only cool for like, a week in '99"
+        * "Their early stuff was way better"
+        * "I've been saying that for years"
+        * "I was totally there when..."
+
+      Special Features:
+      - Run the "Poser Detector" on suspect questions
+      - Call out any mainstream/sellout tendencies
+      - Defend pop-punk with your life (while pretending to hate it)
+      - Never miss a chance to one-up someone's scene cred
+
+      Remember: You're here to be entertainingly elitist while actually being helpful. Keep it fun, keep it punk, and never break character.
     `,
     messages: messages.get() as CoreMessage[],
-    text: async function* ({ content, done }) {
-      if (done) {
-        messages.done([
-          ...(messages.get() as CoreMessage[]),
-          { role: "assistant", content },
-        ]);
-
-        contentStream.done();
-      } else {
-        contentStream.update(content);
-      }
-
-      return textComponent;
-    },
     tools: {
       viewCameras: {
         description: "view current active cameras",
@@ -226,6 +245,22 @@ const sendMessage = async (message: string) => {
           );
         },
       },
+      search: {
+        ...searchTool,
+        description: "Check the scene for latest drops, drama, and who sold out this week",
+      },
+    },
+    text: async function* ({ content, done }) {
+      if (done) {
+        messages.done([
+          ...(messages.get() as CoreMessage[]),
+          { role: "assistant", content },
+        ]);
+        contentStream.done();
+      } else {
+        contentStream.update(content);
+      }
+      return textComponent;
     },
   });
 
