@@ -22,7 +22,7 @@ export default function Home() {
       action: "Give me your honest opinion on whether Blink-182 sold out" 
     },
     {
-      title: "What's your take on",
+      title: "What&apos;s your take on",
       label: "modern pop-punk?",
       action: "What do you think about modern pop-punk bands?",
     },
@@ -46,13 +46,13 @@ export default function Home() {
                   <span className="text-xl font-bold">🤘 PunkBot 🎸</span>
                 </p>
                 <p>
-                  Yo! I'm PunkBot, your resident know-it-all for all things punk rock.
+                  Yo! I&apos;m PunkBot, your resident know-it-all for all things punk rock.
                   Been in the scene since forever, seen every band worth seeing, and
                   probably moshed at your first show.
                 </p>
                 <p>
                   Hit me up about anything punk - from old school to pop-punk (yeah,
-                  whatever, I'll talk about it). Just don't expect me to be nice about
+                  whatever, I&apos;ll talk about it). Just don&apos;t expect me to be nice about
                   your taste in music.
                 </p>
               </div>

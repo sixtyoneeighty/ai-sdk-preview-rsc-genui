@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { TavilySearchAPI } from "@/lib/tavily";
 import { TavilySearchAPIParameters } from "@/lib/types";
 import OpenAI from "openai";
+import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 // Initialize Tavily client
 const tavily = new TavilySearchAPI(process.env.TAVILY_API_KEY || '');
@@ -12,15 +13,8 @@ const tavily = new TavilySearchAPI(process.env.TAVILY_API_KEY || '');
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.GOOGLE_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro",
+  baseURL: "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro/chat/completions",
 });
-
-// Define message types
-interface ChatMessage {
-  role: "user" | "assistant" | "system" | "function";
-  content: string;
-  name?: string;
-}
 
 // Define Tavily function schema
 const tavilyFunction = {
@@ -86,6 +80,7 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
   try {
     // First, try to get real-time info if needed
     const searchResponse = await openai.chat.completions.create({
+      model: "gemini-1.5-pro",
       messages: [
         {
           role: "system",
@@ -95,7 +90,7 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
           role: "user",
           content: prompt
         }
-      ],
+      ] as ChatCompletionMessageParam[],
       functions: [tavilyFunction],
       temperature: 0.7,
     });
@@ -109,7 +104,7 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
     }
 
     // Now generate the final response with the search results
-    const messages: ChatMessage[] = [
+    const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
         content: PUNK_SYSTEM_PROMPT
@@ -130,6 +125,7 @@ export async function sendMessage(prompt: string): Promise<ReactNode> {
     });
 
     const response = await openai.chat.completions.create({
+      model: "gemini-1.5-pro",
       messages,
       temperature: 0.9,
       stream: true,
