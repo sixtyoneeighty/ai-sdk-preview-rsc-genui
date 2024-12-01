@@ -7,11 +7,11 @@ export type HarmCategory =
   | "HARM_CATEGORY_SEXUALLY_EXPLICIT";
 
 export type HarmThreshold = 
-  | "BLOCK_NONE"
   | "HARM_BLOCK_THRESHOLD_UNSPECIFIED"
   | "BLOCK_LOW_AND_ABOVE"
   | "BLOCK_MEDIUM_AND_ABOVE"
-  | "BLOCK_ONLY_HIGH";
+  | "BLOCK_ONLY_HIGH"
+  | "BLOCK_NONE";
 
 export interface SafetySetting {
   category: HarmCategory;
@@ -19,24 +19,24 @@ export interface SafetySetting {
 }
 
 // Create base model
-export const geminiModel = google("gemini-1.5-pro");
+export const geminiModel = google("gemini-1.5-pro-latest");
 
-// Define safety settings separately
+// Configure safety settings - all set to BLOCK_NONE for maximum punk rock attitude
 export const safetySettings: SafetySetting[] = [
-  { 
-    category: "HARM_CATEGORY_HATE_SPEECH", 
-    threshold: "BLOCK_NONE" 
+  {
+    category: "HARM_CATEGORY_HATE_SPEECH",
+    threshold: "BLOCK_NONE"
   },
-  { 
-    category: "HARM_CATEGORY_DANGEROUS_CONTENT", 
-    threshold: "BLOCK_NONE" 
+  {
+    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+    threshold: "BLOCK_NONE"
   },
-  { 
-    category: "HARM_CATEGORY_HARASSMENT", 
-    threshold: "BLOCK_NONE" 
+  {
+    category: "HARM_CATEGORY_HARASSMENT",
+    threshold: "BLOCK_NONE"
   },
-  { 
-    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", 
-    threshold: "BLOCK_NONE" 
+  {
+    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    threshold: "BLOCK_NONE"
   }
 ];

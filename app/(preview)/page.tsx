@@ -7,7 +7,7 @@ import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { google } from "@ai-sdk/google";
-import { geminiModel, safetySettings } from "./config/aiConfig";
+import { geminiModel, safetySettings, HarmCategory, HarmThreshold } from "./config/aiConfig";
 import { CoreUserMessage } from "ai";
 
 export default function Home() {
@@ -143,7 +143,7 @@ export default function Home() {
             ]);
             setInput("");
 
-            // Create serializable model config
+            // Create serializable model config with proper types
             const modelConfig = {
               name: geminiModel.name,
               configuration: {

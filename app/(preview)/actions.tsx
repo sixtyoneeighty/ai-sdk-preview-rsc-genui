@@ -18,7 +18,7 @@ import { z } from "zod";
 import { CameraView } from "@/components/camera-view";
 import { HubView } from "@/components/hub-view";
 import { UsageView } from "@/components/usage-view";
-import { geminiModel, safetySettings } from "./config/aiConfig";
+import { geminiModel, safetySettings, HarmCategory, HarmThreshold } from "./config/aiConfig";
 import { searchTool, executeSearch } from "./tools/searchTool";
 
 export interface Hub {
@@ -50,6 +50,21 @@ interface SerializableModelConfig {
     }>;
   };
 }
+
+const validCategories = [
+  "HARM_CATEGORY_HATE_SPEECH",
+  "HARM_CATEGORY_DANGEROUS_CONTENT",
+  "HARM_CATEGORY_HARASSMENT",
+  "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+] as const;
+
+const validThresholds = [
+  "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+  "BLOCK_LOW_AND_ABOVE",
+  "BLOCK_MEDIUM_AND_ABOVE",
+  "BLOCK_ONLY_HIGH",
+  "BLOCK_NONE"
+] as const;
 
 const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
   "use server";
@@ -91,9 +106,32 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
     userMessage
   ]);
 
-  // Create a new Gemini model instance with the config
+  // Create a new Gemini model instance with validated config
   const configuredModel = google(model.name, {
-    safetySettings: model.configuration.safetySettings
+    safetySettings: model.configuration.safetySettings.map((setting) => {
+      // Validate and cast category
+      if (!validCategories.includes(setting.category as HarmCategory)) {
+        console.warn(`Invalid category: ${setting.category}, defaulting to HARM_CATEGORY_HATE_SPEECH`);
+        return {
+          category: "HARM_CATEGORY_HATE_SPEECH" as HarmCategory,
+          threshold: "BLOCK_NONE" as HarmThreshold
+        };
+      }
+      
+      // Validate and cast threshold
+      if (!validThresholds.includes(setting.threshold as HarmThreshold)) {
+        console.warn(`Invalid threshold: ${setting.threshold}, defaulting to BLOCK_NONE`);
+        return {
+          category: setting.category as HarmCategory,
+          threshold: "BLOCK_NONE" as HarmThreshold
+        };
+      }
+
+      return {
+        category: setting.category as HarmCategory,
+        threshold: setting.threshold as HarmThreshold
+      };
+    })
   });
 
   const contentStream = createStreamableValue("");
