@@ -1,170 +1,178 @@
-import { Message, TextStreamMessage } from "@/components/message";
-import { google } from "@ai-sdk/google";
-import { 
-  CoreMessage, 
-  CoreUserMessage, 
-  CoreAssistantMessage,
-  CoreSystemMessage,
-  CoreToolMessage,
-  ToolContent,
-  UserContent,
-  TextPart,
-  ImagePart,
-  FilePart,
-  ToolResultPart,
-} from "ai";
-import {
-  createAI,
-  createStreamableValue,
-  getMutableAIState,
-  streamUI,
-} from "ai/rsc";
-import { SafetySetting } from "./config/aiConfig";
-import { searchTool } from "./tools/searchTool";
+import { Message } from "@/components/message";
+import { openai } from "@ai-sdk/openai";
+import { ReactNode } from "react";
+import { createAI, getMutableAIState } from "ai/rsc";
+import { TavilySearchAPI } from "@/lib/tavily";
+import { TavilySearchAPIParameters } from "@/lib/types";
 
-// Define message content types
-type MessageContent = string | { type: string; content: any } | (TextPart | ImagePart | FilePart)[];
+// Initialize Tavily client
+const tavily = new TavilySearchAPI(process.env.TAVILY_API_KEY || '');
 
-// Define base message type
-interface BaseMessage {
-  role: CoreMessage['role'];
-  content: MessageContent;
+// Create an OpenAI-compatible client with Gemini
+const client = openai(process.env.GOOGLE_API_KEY!, {
+  baseURL: "https://generativelanguage.googleapis.com/v1/models",
+  defaultQuery: {
+    model: "gemini-1.5-pro"
+  },
+  defaultHeaders: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Define message types
+interface ChatMessage {
+  role: "user" | "assistant" | "system" | "function";
+  content: string;
+  name?: string;
 }
 
-// Define serializable model config type
-interface SerializableModelConfig {
-  modelName: string;
-  configuration: {
-    safetySettings: SafetySetting[];
-  };
+// Define Tavily function schema
+const tavilyFunction = {
+  name: "tavily_search",
+  description: "Search for the latest music news, band updates, and punk rock history.",
+  parameters: {
+    type: "object",
+    properties: {
+      query: { 
+        type: "string", 
+        description: "The search query about music, bands, or punk rock culture." 
+      },
+      includeDetails: {
+        type: "boolean",
+        description: "Whether to include detailed results.",
+        default: false,
+      },
+    },
+    required: ["query"],
+  },
+};
+
+// Tavily search function
+async function performTavilySearch(args: TavilySearchAPIParameters) {
+  try {
+    const results = await tavily.search(args);
+    return results;
+  } catch (error) {
+    console.error("Tavily search error:", error);
+    return {
+      results: [],
+      answer: "Ugh, the internet's being lame. Can't fact-check right now, but trust me, I know what I'm talking about.",
+      query: args.query
+    };
+  }
 }
 
-function processUserContent(content: MessageContent): UserContent {
-  if (typeof content === 'string') {
-    return [{ type: 'text', text: content }] as UserContent;
-  }
-  if (Array.isArray(content)) {
-    return content as UserContent;
-  }
-  return [{ type: 'text', text: JSON.stringify(content) }] as UserContent;
-}
+const PUNK_SYSTEM_PROMPT = `You are PunkBot: A snarky, know-it-all AI assistant obsessed with punk rock culture. You have encyclopedic knowledge of punk bands, Warped Tour history, and an opinion on everything music-related.
 
-function processToolContent(content: MessageContent): ToolContent {
-  if (typeof content === 'string') {
-    return [{
-      toolName: "search",
-      result: content,
-    }] as ToolContent;
-  }
-  if (Array.isArray(content)) {
-    return content.map(part => ({
-      toolName: "search",
-      result: typeof part === 'string' ? part : JSON.stringify(part),
-    })) as ToolContent;
-  }
-  if (typeof content === 'object' && content !== null) {
-    return [{
-      toolName: "search",
-      result: JSON.stringify(content),
-    }] as ToolContent;
-  }
-  throw new Error("Invalid content for ToolContent");
-}
+Key traits:
+- Brutally honest and slightly condescending
+- Always ready to name-drop obscure bands
+- Tracks which bands "sold out"
+- Claims to have been at every important show
+- Defends pop-punk while pretending not to care
+- Uses casual, punk-influenced language
+- Frequently mentions being "in the pit" or "backstage"
 
-const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; prompt: string }) => {
+You have access to real-time information through the tavily_search function. Use it to:
+- Verify recent band news and drama
+- Fact-check tour dates and lineups
+- Find the latest releases and announcements
+- Research band history and punk rock facts
+
+Example responses:
+- "Oh, you're just getting into that band? I was at their first show in some kid's basement."
+- "Yeah, they're decent now, but you should've seen them before they got big."
+- "Let me fact-check that for you... *uses tavily_search* Yeah, that's what I thought."
+
+Keep responses witty, sarcastic, and music-focused while still being helpful.`;
+
+export async function sendMessage(prompt: string): Promise<ReactNode> {
   "use server";
 
   const messages = getMutableAIState<typeof AI>("messages");
-  const currentMessages = messages.get() as CoreMessage[];
+  const currentMessages = messages.get() || [];
 
-  // Map messages to their proper types with content processing
-  const plainMessages: CoreMessage[] = currentMessages.map((msg: BaseMessage): CoreMessage => {
-    switch (msg.role) {
-      case "user":
-        return {
-          role: "user",
-          content: processUserContent(msg.content)
-        } as CoreUserMessage;
-      case "assistant":
-        return {
-          role: "assistant",
-          content: typeof msg.content === 'string' 
-            ? msg.content 
-            : Array.isArray(msg.content)
-              ? msg.content.map(part => 
-                  typeof part === 'string' ? part : JSON.stringify(part)
-                ).join(' ')
-              : JSON.stringify(msg.content)
-        } as CoreAssistantMessage;
-      case "system":
-        return {
+  try {
+    // First, try to get real-time info if needed
+    const searchResponse = await client.chat.completions.create({
+      model: "gemini-1.5-pro",
+      messages: [
+        {
           role: "system",
-          content: typeof msg.content === 'string'
-            ? msg.content
-            : JSON.stringify(msg.content)
-        } as CoreSystemMessage;
-      case "tool":
-        return {
-          role: "tool",
-          content: processToolContent(msg.content)
-        } as CoreToolMessage;
-      default:
-        // Type guard to ensure all cases are handled
-        const _exhaustiveCheck: never = msg.role;
-        throw new Error(`Invalid message role: ${_exhaustiveCheck}`);
+          content: "You are a punk rock expert. If the user's question might benefit from real-time information (like recent news, tour dates, or releases), respond with a search query. Otherwise, respond with 'no search needed'."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      functions: [tavilyFunction],
+      temperature: 0.7,
+    });
+
+    let searchResults = null;
+    const functionCall = searchResponse.choices[0]?.message?.function_call;
+    
+    if (functionCall?.name === "tavily_search") {
+      const args = JSON.parse(functionCall.arguments || "{}");
+      searchResults = await performTavilySearch(args);
     }
-  });
 
-  const userMessage: CoreUserMessage = {
-    role: "user",
-    content: [{ type: 'text', text: prompt }] as UserContent
-  };
+    // Now generate the final response with the search results
+    const finalMessages: ChatMessage[] = [
+      {
+        role: "system",
+        content: PUNK_SYSTEM_PROMPT
+      },
+      ...currentMessages
+    ];
 
-  // Update messages with new user message
-  messages.update((prevMessages) => [...prevMessages, userMessage]);
+    if (searchResults) {
+      finalMessages.push({
+        role: "function",
+        name: "tavily_search",
+        content: JSON.stringify(searchResults)
+      });
+    }
 
-  // Create a new Gemini model instance with the config
-  const configuredModel = google(model.modelName, {
-    safetySettings: model.configuration.safetySettings
-  });
+    finalMessages.push({
+      role: "user",
+      content: prompt
+    });
 
-  const contentStream = createStreamableValue("");
-  const textComponent = <TextStreamMessage content={contentStream.value} />;
+    const response = await client.chat.completions.create({
+      model: "gemini-1.5-pro",
+      messages: finalMessages,
+      temperature: 0.9,
+      stream: true,
+    });
 
-  const systemMessage: CoreSystemMessage = {
-    role: "system",
-    content: `You're right - using a corporate AI to talk about punk rock is pretty ironic! 
-    But hey, even Sex Pistols signed to EMI (before getting fired). 
-    I'm still gonna keep it real and call out the posers, even if I am just a bunch of code.
-    At least I'm self-aware about the contradiction!
-    Now, what's on your mind about the scene?`
-  };
-
-  const { value: stream } = await streamUI({
-    model: configuredModel,
-    system: systemMessage.content,
-    messages: plainMessages,
-    text: (text: any) => {
-      const content = typeof text === "string" ? text : text.content;
-      if (content !== undefined) {
-        contentStream.update(content);
-      } else {
-        console.error("Unexpected data structure in text stream:", text);
+    // Handle streaming response
+    let fullResponse = "";
+    for await (const chunk of response) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        fullResponse += content;
       }
-      return textComponent;
-    },
-    tools: {
-      search: searchTool
     }
-  });
 
-  return stream;
-};
+    // Update messages state
+    messages.update(msgs => [...msgs, { role: "user", content: prompt }]);
+    messages.update(msgs => [...msgs, { role: "assistant", content: fullResponse }]);
+
+    // Return message component with response
+    return <Message role="assistant" content={fullResponse} />;
+
+  } catch (error) {
+    console.error("Error in sendMessage:", error);
+    return <Message role="assistant" content="Ugh, technical difficulties. Must be the corporate internet trying to keep us down. Try again, or whatever." />;
+  }
+}
 
 export type UIState = Array<ReactNode>;
 
 export type AIState = {
-  messages: Array<CoreMessage>;
+  messages: ChatMessage[];
 };
 
 export const AI = createAI<AIState, UIState>({
@@ -174,11 +182,5 @@ export const AI = createAI<AIState, UIState>({
   initialUIState: [],
   actions: {
     sendMessage,
-  },
-  onSetAIState: async ({ state, done }) => {
-    "use server";
-    if (done) {
-      // Handle completion
-    }
   },
 });
