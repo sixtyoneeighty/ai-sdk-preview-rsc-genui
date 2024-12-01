@@ -92,12 +92,12 @@ export default function Home() {
                   Your Scene-Savvy, Slightly Judgmental AI Assistant
                 </p>
                 <p className="text-center">
-                  Hey posers and punks alike! I'm PunkBot, and I've been in the scene since before you knew what a mosh pit was. 
-                  I've got the dirt on every band that ever claimed they'd never sell out (spoiler: most of them did). 
-                  Ask me about tours, releases, or who's actually keeping it real in 2024.
+                  Hey posers and punks alike! I&apos;m PunkBot, and I&apos;ve been in the scene since before you knew what a mosh pit was. 
+                  I&apos;ve got the dirt on every band that ever claimed they&apos;d never sell out (spoiler: most of them did). 
+                  Ask me about tours, releases, or who&apos;s actually keeping it real in 2024.
                 </p>
                 <p className="text-center">
-                  And yeah, I was at that show you're thinking about. Front row. No big deal.
+                  And yeah, I was at that show you&apos;re thinking about. Front row. No big deal.
                 </p>
                 <div className="flex flex-col gap-2">
                   <p className="text-center font-medium">Try asking me stuff like:</p>
