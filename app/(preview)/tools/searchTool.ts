@@ -30,7 +30,13 @@ export const searchParameters = z.object({
 // Define the tool interface
 export type SearchToolArgs = z.infer<typeof searchParameters>;
 
-// Define the search function separately
+// Export just the tool definition (no execution logic)
+export const searchTool = {
+  description: "Check the scene for latest drops, drama, and who sold out this week",
+  parameters: searchParameters
+};
+
+// Separate execution function
 export async function executeSearch(args: SearchToolArgs) {
   const { 
     query, 
@@ -77,10 +83,3 @@ export async function executeSearch(args: SearchToolArgs) {
     throw new Error("Couldn't get the scene report. The underground's gone dark.");
   }
 }
-
-// Export the tool definition without execute
-export const searchTool = {
-  description: "Check the scene for latest drops, drama, and who sold out this week",
-  parameters: searchParameters,
-  execute: executeSearch
-};

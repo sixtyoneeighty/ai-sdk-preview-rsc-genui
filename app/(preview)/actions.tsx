@@ -281,16 +281,15 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
           );
         },
       },
-      search: {
-        description: searchTool.description,
-        parameters: searchTool.parameters,
-        function: async (args) => {
-          const plainArgs = JSON.parse(JSON.stringify(args));
-          return await executeSearch(plainArgs);
-        }
-      }
+      search: searchTool,
     }
   });
+
+  // Handle tool execution separately if needed
+  const handleToolExecution = async (args: any) => {
+    const plainArgs = JSON.parse(JSON.stringify(args));
+    return await executeSearch(plainArgs);
+  };
 
   return stream;
 };
