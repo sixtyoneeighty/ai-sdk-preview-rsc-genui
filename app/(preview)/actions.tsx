@@ -100,12 +100,25 @@ const sendMessage = async ({ model, prompt }: { model: any; prompt: string }) =>
     Keep responses concise and attitude-heavy.`
   };
 
+  // Define type for text stream data
+  type StreamText = {
+    content: string;
+    delta: string;
+    done: boolean;
+  };
+
   const { value: stream } = await streamUI({
     model: plainModel,
     system: systemMessage.content,
     messages: plainMessages,
-    text: (text) => {
-      contentStream.update(text);
+    text: (text: StreamText | string) => {
+      // Handle both string and object formats safely
+      const content = typeof text === "string" ? text : text.content;
+      if (content !== undefined) {
+        contentStream.update(content);
+      } else {
+        console.error("Unexpected data structure in text stream:", text);
+      }
       return textComponent;
     },
     tools: {
