@@ -5,7 +5,6 @@ import {
   CoreUserMessage, 
   CoreAssistantMessage,
   CoreSystemMessage,
-  generateId
 } from "ai";
 import {
   createAI,
@@ -60,7 +59,6 @@ const sendMessage = async ({ model, prompt }: { model: SerializableModelConfig; 
   }));
 
   const userMessage: CoreUserMessage = {
-    id: generateId(),
     role: "user",
     content: prompt,
   };

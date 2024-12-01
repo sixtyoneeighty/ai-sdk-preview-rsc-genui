@@ -89,8 +89,14 @@ export default function Home() {
                               content={action.action}
                             />,
                           ]);
+                          const serializableConfig = {
+                            modelName: MODEL_NAME,
+                            configuration: {
+                              safetySettings: modelConfig.safetySettings
+                            }
+                          };
                           const response: ReactNode = await sendMessage({
-                            model: modelConfig,
+                            model: serializableConfig,
                             prompt: action.action,
                           });
                           setMessages((messages) => [...messages, response]);
